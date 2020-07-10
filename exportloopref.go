@@ -47,19 +47,22 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		if id != nil {
 			dMsg := fmt.Sprintf("exporting a pointer for the loop variable %s", id.Name)
 			fMsg := fmt.Sprintf("loop variable %s should be pinned", id.Name)
-			d := analysis.Diagnostic{Pos: id.Pos(),
-				End:      id.End(),
-				Message:  dMsg,
-				Category: "exportloopref",
-				SuggestedFixes: []analysis.SuggestedFix{{
+			var suggest []analysis.SuggestedFix
+			if insert != token.NoPos {
+				suggest = []analysis.SuggestedFix{{
 					Message: fMsg,
 					TextEdits: []analysis.TextEdit{{
-						// For a pure insertion, End can either be set to Pos or token.NoPos.
 						Pos:     insert,
-						End:     token.NoPos,
-						NewText: []byte(fmt.Sprintf("%[1]s := %[1]s", id.Name)),
+						End:     insert,
+						NewText: []byte(fmt.Sprintf("%[1]s := %[1]s\n", id.Name)),
 					}},
-				}},
+				}}
+			}
+			d := analysis.Diagnostic{Pos: id.Pos(),
+				End:            id.End(),
+				Message:        dMsg,
+				Category:       "exportloopref",
+				SuggestedFixes: suggest,
 			}
 			pass.Report(d)
 		}
